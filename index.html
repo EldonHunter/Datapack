@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataPack Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111520;
+    --surface2: #161d2e;
+    --border: #2a3550;
+    --accent: #4fffb0;
+    --accent2: #7b5cff;
+    --accent3: #ff9f43;
+    --text: #d4daf0;
+    --muted: #6b7a99;
+    --glow: rgba(79,255,176,0.15);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── BACKGROUND GRID ─── */
+  body::before {
+    content:'';
+    position:fixed; inset:0; z-index:0;
+    background-image:
+      linear-gradient(rgba(79,255,176,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,255,176,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none;
+  }
+
+  /* ─── LANG TOGGLE ─── */
+  #lang-toggle {
+    position:fixed; top:18px; right:22px; z-index:100;
+    display:flex; gap:6px;
+  }
+  .lang-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); padding: 6px 14px; border-radius: 6px;
+    cursor:pointer; font-family:'Exo 2',sans-serif; font-size:.8rem;
+    font-weight:600; letter-spacing:.06em; transition: all .2s;
+  }
+  .lang-btn.active {
+    background: var(--accent); color: #000; border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(79,255,176,.5);
+  }
+  .lang-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── HOME PAGE ─── */
+  #home {
+    position:relative; z-index:1;
+    min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding: 60px 20px 40px;
+  }
+
+  .hero-label {
+    font-size:.75rem; letter-spacing:.25em; color: var(--accent);
+    text-transform:uppercase; margin-bottom:16px; opacity:.8;
+  }
+
+  .hero-title {
+    font-family:'Cinzel Decorative', cursive;
+    font-size: clamp(2rem, 6vw, 4rem);
+    line-height:1.1;
+    text-align:center;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color:transparent;
+    background-clip: text;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 30px rgba(79,255,176,.3));
+  }
+
+  .hero-sub {
+    font-size: clamp(.9rem,2vw,1.1rem); color: var(--muted);
+    text-align:center; max-width:520px;
+    line-height:1.7; margin-bottom: 60px;
+  }
+
+  /* ─── CARD GRID ─── */
+  .card-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap:18px;
+    width:100%; max-width:1000px;
+  }
+
+  .pack-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:14px;
+    padding:26px 22px;
+    cursor:pointer;
+    transition: transform .25s, border-color .25s, box-shadow .25s;
+    position:relative; overflow:hidden;
+  }
+  .pack-card::before {
+    content:''; position:absolute; inset:0; border-radius:14px;
+    opacity:0; transition:opacity .3s;
+  }
+  .pack-card:hover { transform:translateY(-5px); }
+  .pack-card:hover::before { opacity:1; }
+
+  .pack-card.green  { --c: #4fffb0; }
+  .pack-card.purple { --c: #7b5cff; }
+  .pack-card.orange { --c: #ff9f43; }
+  .pack-card.blue   { --c: #38bff8; }
+  .pack-card.pink   { --c: #f97ef7; }
+
+  .pack-card { border-color: color-mix(in srgb, var(--c) 25%, var(--border)); }
+  .pack-card:hover { 
+    border-color: var(--c);
+    box-shadow: 0 0 28px color-mix(in srgb, var(--c) 25%, transparent),
+                inset 0 0 30px color-mix(in srgb, var(--c) 5%, transparent);
+  }
+
+  .pack-icon {
+    font-size:2.4rem; margin-bottom:14px; display:block;
+    filter: drop-shadow(0 0 8px var(--c));
+  }
+  .pack-name {
+    font-family:'Cinzel Decorative',cursive; font-size:.95rem;
+    color: var(--c); margin-bottom:8px; letter-spacing:.03em;
+  }
+  .pack-version {
+    font-size:.7rem; color: var(--muted); letter-spacing:.1em;
+    text-transform:uppercase; margin-bottom:12px;
+  }
+  .pack-short {
+    font-size:.85rem; color: color-mix(in srgb, var(--text) 70%, transparent);
+    line-height:1.6;
+  }
+  .pack-arrow {
+    position:absolute; bottom:16px; right:18px;
+    color: var(--c); font-size:1.2rem; opacity:.5;
+    transition: opacity .2s, transform .2s;
+  }
+  .pack-card:hover .pack-arrow { opacity:1; transform:translateX(4px); }
+
+  /* ─── DETAIL PAGE ─── */
+  #detail {
+    display:none; position:relative; z-index:1;
+    min-height:100vh; padding:30px 20px 60px;
+    max-width:860px; margin:0 auto;
+  }
+  #detail.active { display:block; }
+  #home.hidden { display:none; }
+
+  .back-btn {
+    background: none; border: 1px solid var(--border);
+    color: var(--muted); padding:8px 18px; border-radius:8px;
+    cursor:pointer; font-family:'Exo 2',sans-serif; font-size:.85rem;
+    transition: all .2s; display:inline-flex; align-items:center; gap:8px;
+    margin-bottom:40px;
+  }
+  .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .detail-header {
+    display:flex; align-items:flex-start; gap:22px;
+    margin-bottom:40px; flex-wrap:wrap;
+  }
+  .detail-icon { font-size:3.5rem; line-height:1; }
+  .detail-meta { flex:1; }
+  .detail-title {
+    font-family:'Cinzel Decorative',cursive;
+    font-size:clamp(1.4rem,4vw,2.2rem);
+    background: linear-gradient(135deg, #fff, var(--c,var(--accent)));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text; margin-bottom:8px;
+  }
+  .detail-version-badge {
+    display:inline-block; background: var(--surface2);
+    border:1px solid var(--border); border-radius:20px;
+    padding:3px 12px; font-size:.72rem; color:var(--muted);
+    letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px;
+  }
+  .detail-tagline {
+    font-size:1.05rem; color:var(--text); line-height:1.7;
+    max-width:500px;
+  }
+
+  .detail-download {
+    display:inline-flex; align-items:center; gap:8px;
+    background: var(--c, var(--accent)); color:#000;
+    padding:11px 24px; border-radius:8px; font-weight:700;
+    font-family:'Exo 2',sans-serif; font-size:.9rem;
+    cursor:pointer; border:none; transition:all .2s;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--c,var(--accent)) 40%, transparent);
+    text-decoration:none; margin-top:18px;
+  }
+  .detail-download:hover { filter:brightness(1.15); transform:scale(1.03); }
+
+  .section-title {
+    font-size:.7rem; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:16px; padding-bottom:8px;
+    border-bottom:1px solid var(--border);
+  }
+
+  .feature-list {
+    list-style:none; margin-bottom:40px;
+  }
+  .feature-list li {
+    padding:12px 0; border-bottom:1px solid var(--surface2);
+    display:flex; align-items:flex-start; gap:12px;
+    font-size:.92rem; line-height:1.6;
+  }
+  .feature-list li:last-child { border-bottom:none; }
+  .feat-icon {
+    color: var(--c, var(--accent)); font-size:1rem;
+    margin-top:2px; flex-shrink:0;
+  }
+
+  .info-grid {
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap:14px; margin-bottom:40px;
+  }
+  .info-tile {
+    background: var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:16px;
+  }
+  .info-tile-label { font-size:.68rem; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+  .info-tile-value { font-size:.95rem; font-weight:600; color:var(--text); }
+
+  .adv-grid {
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap:10px; margin-bottom:40px;
+  }
+  .adv-item {
+    background: var(--surface2); border:1px solid var(--border);
+    border-radius:8px; padding:12px 14px;
+  }
+  .adv-item-name { font-size:.85rem; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .adv-item-desc { font-size:.75rem; color:var(--muted); line-height:1.4; }
+
+  .spoil-box {
+    background: var(--surface2); border:1px solid var(--border);
+    border-radius:10px; overflow:hidden; margin-bottom:40px;
+  }
+  .spoil-toggle {
+    width:100%; background:none; border:none; color:var(--text);
+    padding:14px 18px; text-align:left; cursor:pointer;
+    font-family:'Exo 2',sans-serif; font-size:.9rem; font-weight:600;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .spoil-toggle:hover { background: rgba(255,255,255,.03); }
+  .spoil-content { padding:0 18px; max-height:0; overflow:hidden; transition:max-height .4s ease, padding .2s; }
+  .spoil-content.open { max-height:600px; padding:18px; }
+
+  /* particles */
+  .star { position:fixed; border-radius:50%; pointer-events:none; z-index:0; }
+
+  /* responsive */
+  @media(max-width:600px) {
+    .detail-header { gap:14px; }
+    .detail-icon { font-size:2.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LANG TOGGLE -->
+<div id="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('fr')">FR</button>
+</div>
+
+<!-- ═══════════════ HOME PAGE ═══════════════ -->
+<div id="home">
+  <p class="hero-label" data-en="Minecraft Java Edition" data-fr="Minecraft Java Édition">Minecraft Java Edition</p>
+  <h1 class="hero-title">DataPack<br>Studio</h1>
+  <p class="hero-sub"
+     data-en="A collection of handcrafted datapacks to enhance your Minecraft experience. Click a pack to learn more."
+     data-fr="Une collection de datapacks faits main pour enrichir votre expérience Minecraft. Cliquez sur un pack pour en savoir plus.">
+    A collection of handcrafted datapacks to enhance your Minecraft experience. Click a pack to learn more.
+  </p>
+
+  <div class="card-grid">
+
+    <!-- FULLBRIGHT -->
+    <div class="pack-card green" onclick="showDetail('fullbright')">
+      <span class="pack-icon">🌟</span>
+      <div class="pack-name">Fullbright</div>
+      <div class="pack-version">v1.01</div>
+      <p class="pack-short" data-en="See everything in the dark — permanent night vision for all players." data-fr="Voyez tout dans l'obscurité — vision nocturne permanente pour tous les joueurs.">
+        See everything in the dark — permanent night vision for all players.
+      </p>
+      <span class="pack-arrow">→</span>
+    </div>
+
+    <!-- COUNTERDAY -->
+    <div class="pack-card purple" onclick="showDetail('counterday')">
+      <span class="pack-icon">📅</span>
+      <div class="pack-name">Counter Day</div>
+      <div class="pack-version">v1.01</div>
+      <p class="pack-short" data-en="Track how many days you've survived — day counter shown on the HUD." data-fr="Comptez les jours de survie — affiché en temps réel sur le HUD.">
+        Track how many days you've survived — day counter shown on the HUD.
+      </p>
+      <span class="pack-arrow">→</span>
+    </div>
+
+    <!-- UNCRAFTING -->
+    <div class="pack-card orange" onclick="showDetail('uncrafting')">
+      <span class="pack-icon">🔧</span>
+      <div class="pack-name">Uncrafting</div>
+      <div class="pack-version">v1.03</div>
+      <p class="pack-short" data-en="Undo your crafts — break down tools, armor and redstone items back into materials." data-fr="Défaites vos crafts — démontez outils, armures et items redstone en matériaux.">
+        Undo your crafts — break down tools, armor and redstone items back into materials.
+      </p>
+      <span class="pack-arrow">→</span>
+    </div>
+
+    <!-- SPEAKEUR -->
+    <div class="pack-card blue" onclick="showDetail('speakeur')">
+      <span class="pack-icon">🔊</span>
+      <div class="pack-name">Speakeur</div>
+      <div class="pack-version">v1.03</div>
+      <p class="pack-short" data-en="A sound-based datapack that enriches audio feedback in your world." data-fr="Un datapack sonore qui enrichit les retours audio dans votre monde.">
+        A sound-based datapack that enriches audio feedback in your world.
+      </p>
+      <span class="pack-arrow">→</span>
+    </div>
+
+    <!-- ADVANCEMENT -->
+    <div class="pack-card pink" onclick="showDetail('advancement')">
+      <span class="pack-icon">⚒️</span>
+      <div class="pack-name">MineAdvancement</div>
+      <div class="pack-version">v1.01</div>
+      <p class="pack-short" data-en="A full miner advancement tree — from first pickaxe to netherite legend, with real rewards." data-fr="Un arbre de succès de mineur complet — du premier pic au maître du netherite, avec de vraies récompenses.">
+        A full miner advancement tree — from first pickaxe to netherite legend, with real rewards.
+      </p>
+      <span class="pack-arrow">→</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ DETAIL PAGE ═══════════════ -->
+<div id="detail">
+  <button class="back-btn" onclick="goBack()">← <span data-en="Back" data-fr="Retour">Back</span></button>
+  <div id="detail-content"></div>
+</div>
+
+<script>
+// ─── LANGUAGE ───
+let lang = 'en';
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.lang-btn:${l === 'en' ? 'first' : 'last'}-child`).classList.add('active');
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.textContent = el.getAttribute('data-' + l);
+  });
+  // re-render detail if open
+  if (currentPack) renderDetail(currentPack);
+}
+
+// ─── PACKS DATA ───
+const packs = {
+  fullbright: {
+    icon: '🌟',
+    color: '#4fffb0',
+    colorVar: 'green',
+    versions: 'v1.01 · MC 1.21–1.21.4',
+    titles: { en: 'Fullbright', fr: 'Fullbright' },
+    taglines: {
+      en: 'No more squinting in caves. This datapack permanently grants Night Vision to every player, every tick — so you can focus on playing, not on lighting everything up.',
+      fr: 'Fini de plisser les yeux dans les grottes. Ce datapack accorde en permanence la Vision Nocturne à chaque joueur, à chaque tick — pour jouer sans se soucier de l\'éclairage.'
+    },
+    infoTiles: {
+      en: [['Type','Function-based'],['Players','All (server)'],['Size','Tiny'],['Lag impact','None']],
+      fr: [['Type','Basé sur fonction'],['Joueurs','Tous (serveur)'],['Taille','Minuscule'],['Impact lag','Nul']]
+    },
+    features: {
+      en: [
+        ['⚡', 'Runs every tick — night vision is never lost'],
+        ['👥', 'Works for all players simultaneously on multiplayer'],
+        ['🔕', 'Effect is silent — no particles, no UI flash'],
+        ['📦', 'Ultra lightweight: only 2 functions'],
+        ['🎮', 'Compatible MC 1.21 → 1.21.4 (pack format 71–102)'],
+      ],
+      fr: [
+        ['⚡', 'S\'exécute à chaque tick — la vision nocturne ne s\'interrompt jamais'],
+        ['👥', 'Fonctionne pour tous les joueurs simultanément en multijoueur'],
+        ['🔕', 'Effet silencieux — pas de particules, pas de flash UI'],
+        ['📦', 'Ultra léger : seulement 2 fonctions'],
+        ['🎮', 'Compatible MC 1.21 → 1.21.4 (pack format 71–102)'],
+      ]
+    }
+  },
+
+  counterday: {
+    icon: '📅',
+    color: '#7b5cff',
+    colorVar: 'purple',
+    versions: 'v1.01 · MC 1.21–1.21.4',
+    titles: { en: 'Counter Day', fr: 'Counter Day' },
+    taglines: {
+      en: 'Always know what day it is in your world. The current day number floats on every player\'s action bar, updated every tick.',
+      fr: 'Sachez toujours quel jour il est dans votre monde. Le numéro du jour flotte dans la barre d\'action de chaque joueur, mis à jour à chaque tick.'
+    },
+    infoTiles: {
+      en: [['Display','Action Bar (HUD)'],['Update rate','Every tick'],['Players','All'],['Lag impact','Negligible']],
+      fr: [['Affichage','Barre d\'action (HUD)'],['Mise à jour','Chaque tick'],['Joueurs','Tous'],['Impact lag','Négligeable']]
+    },
+    features: {
+      en: [
+        ['📊', 'Uses a scoreboard objective to compute exact in-game day'],
+        ['🖥️', 'Displayed via title/actionbar — visible at all times without opening any menu'],
+        ['🔄', 'Recalculated every tick from gametime (never drifts)'],
+        ['💡', 'Useful for tracking events, challenges or simply roleplay'],
+        ['🎮', 'Compatible MC 1.21 → 1.21.4'],
+      ],
+      fr: [
+        ['📊', 'Utilise un scoreboard pour calculer le jour exact en jeu'],
+        ['🖥️', 'Affiché via title/actionbar — visible en permanence sans ouvrir de menu'],
+        ['🔄', 'Recalculé chaque tick depuis le gametime (jamais de dérive)'],
+        ['💡', 'Utile pour suivre des événements, des défis ou du roleplay'],
+        ['🎮', 'Compatible MC 1.21 → 1.21.4'],
+      ]
+    }
+  },
+
+  uncrafting: {
+    icon: '🔧',
+    color: '#ff9f43',
+    colorVar: 'orange',
+    versions: 'v1.03 · MC 1.21–1.21.4',
+    titles: { en: 'Uncrafting', fr: 'Uncrafting' },
+    taglines: {
+      en: 'Ever crafted the wrong tier of tool or ended up with spare armor? Uncrafting lets you reverse crafting recipes — get your materials back from tools, armor and many redstone items.',
+      fr: 'Vous avez crafté le mauvais niveau d\'outil ou vous vous retrouvez avec des armures en trop ? Uncrafting vous permet d\'inverser les recettes — récupérez vos matériaux depuis outils, armures et items redstone.'
+    },
+    infoTiles: {
+      en: [['Type','Shapeless recipes'],['Items','100+ recipes'],['Materials','All tiers'],['Reversible','Yes']],
+      fr: [['Type','Recettes sans forme'],['Items','100+ recettes'],['Matériaux','Tous les niveaux'],['Réversible','Oui']]
+    },
+    features: {
+      en: [
+        ['⚔️', 'All tool tiers: Wood, Stone, Iron, Copper, Gold, Diamond, Netherite'],
+        ['🛡️', 'All armor sets: Leather, Iron, Copper, Gold, Diamond, Netherite'],
+        ['🔴', 'Redstone items: Observer, Dropper, Dispenser, Comparator, Repeater, Clock, Compass'],
+        ['♻️', 'Simply place the item alone in a crafting table to get materials back'],
+        ['⚖️', 'Balanced output — you get back the exact material count used to craft'],
+      ],
+      fr: [
+        ['⚔️', 'Tous les niveaux d\'outils : Bois, Pierre, Fer, Cuivre, Or, Diamant, Netherite'],
+        ['🛡️', 'Toutes les armures : Cuir, Fer, Cuivre, Or, Diamant, Netherite'],
+        ['🔴', 'Items redstone : Observer, Dropper, Dispenser, Comparateur, Répéteur, Horloge, Boussole'],
+        ['♻️', 'Placez simplement l\'item seul dans une table de craft pour récupérer les matériaux'],
+        ['⚖️', 'Sortie équilibrée — vous récupérez exactement les matériaux utilisés pour crafter'],
+      ]
+    },
+    spoiler: {
+      en: { title: '📋 Full item list (spoiler)', content: 'Tools: pickaxe, axe, shovel, hoe, sword (+ spear) — all 7 tiers.<br>Armor: helmet, chestplate, leggings, boots — all 6 materials.<br>Redstone: observer, dropper, dispenser, comparator, repeater, clock, compass.<br>Over 107 individual recipe files.' },
+      fr: { title: '📋 Liste complète des items (spoiler)', content: 'Outils : pic, hache, pelle, houe, épée (+ lance) — les 7 niveaux.<br>Armures : casque, plastron, jambières, bottes — les 6 matériaux.<br>Redstone : observer, dropper, dispenser, comparateur, répéteur, horloge, boussole.<br>Plus de 107 fichiers de recettes.' }
+    }
+  },
+
+  speakeur: {
+    icon: '🔊',
+    color: '#38bff8',
+    colorVar: 'blue',
+    versions: 'v1.03 · MC 1.21–1.21.4',
+    titles: { en: 'Speakeur', fr: 'Speakeur' },
+    taglines: {
+      en: 'Speakeur adds contextual sound cues to in-game actions, making the audio landscape richer and more reactive.',
+      fr: 'Speakeur ajoute des indices sonores contextuels aux actions en jeu, rendant le paysage audio plus riche et réactif.'
+    },
+    infoTiles: {
+      en: [['Type','Sound/Function'],['Trigger','Event-based'],['Players','All'],['Invasive','No']],
+      fr: [['Type','Son/Fonction'],['Déclencheur','Basé sur événement'],['Joueurs','Tous'],['Invasif','Non']]
+    },
+    features: {
+      en: [
+        ['🎵', 'Custom sound events triggered by in-game actions'],
+        ['🔇', 'Non-invasive — blends naturally with vanilla soundscape'],
+        ['📡', 'Works in both singleplayer and multiplayer'],
+        ['🎮', 'Compatible MC 1.21 → 1.21.4'],
+      ],
+      fr: [
+        ['🎵', 'Événements sonores déclenchés par les actions en jeu'],
+        ['🔇', 'Non invasif — s\'intègre naturellement au soundscape vanilla'],
+        ['📡', 'Fonctionne en solo et en multijoueur'],
+        ['🎮', 'Compatible MC 1.21 → 1.21.4'],
+      ]
+    }
+  },
+
+  advancement: {
+    icon: '⚒️',
+    color: '#f97ef7',
+    colorVar: 'pink',
+    versions: 'v1.01 · MC 1.21–1.21.4',
+    titles: { en: 'MineAdvancement', fr: 'MineAdvancement' },
+    taglines: {
+      en: 'A complete miner-themed advancement tree that guides you from your first wooden pickaxe all the way to a full netherite arsenal. Complete milestones to earn real in-game rewards.',
+      fr: 'Un arbre de succès complet sur le thème du mineur, qui vous guide de votre premier pic en bois jusqu\'à un arsenal complet en netherite. Accomplissez des jalons pour gagner de vraies récompenses en jeu.'
+    },
+    infoTiles: {
+      en: [['Advancements','20+'],['Branches','3 paths'],['Rewards','Yes (items/XP)'],['Type','Quest-like']],
+      fr: [['Succès','20+'],['Branches','3 chemins'],['Récompenses','Oui (items/XP)'],['Type','Quête']]
+    },
+    features: {
+      en: [
+        ['🏆', '20+ unique advancements across 3 specialization branches'],
+        ['💎', 'Rewards on completion: diamonds, netherite, XP (200–400), enchanted books, mending'],
+        ['⛏️', '"Miner" path — mine ores, upgrade tools, reach the deep dark'],
+        ['⚙️', '"Engineer" path — master redstone, craft pistons, observers and dispensers'],
+        ['✨', '"Enchanter" path — build bookshelves, craft lapis blocks, unlock mega power'],
+      ],
+      fr: [
+        ['🏆', '20+ succès uniques répartis en 3 branches de spécialisation'],
+        ['💎', 'Récompenses à la complétion : diamants, netherite, XP (200–400), livres enchantés, mending'],
+        ['⛏️', 'Branche "Mineur" — miner des minerais, améliorer les outils, explorer la deep dark'],
+        ['⚙️', 'Branche "Ingénieur" — maîtriser la redstone, crafter pistons, observers et dispensers'],
+        ['✨', 'Branche "Enchanteur" — construire des bibliothèques, crafter des blocs de lapis, débloquer le mega power'],
+      ]
+    },
+    advancements: {
+      en: [
+        {name:'MineAdvancement', desc:'Start your adventure in the cave'},
+        {name:'Harder than stone', desc:'Smelt your first iron'},
+        {name:'Fire ?!', desc:'Discover the power of the furnace'},
+        {name:'Protection', desc:'Craft a shield'},
+        {name:'In the deeper', desc:'Enter the deep dark'},
+        {name:'Ore collector', desc:'Collect all ore types'},
+        {name:'Enchanter', desc:'Craft a lapis block'},
+        {name:'Teleportation', desc:'Use an ender pearl'},
+        {name:'Upgrade again?!', desc:'Get an idea to upgrade further'},
+        {name:'Main upgrade', desc:'Craft full diamond gear'},
+        {name:'Indestructible soldier', desc:'Master the nether dimension'},
+        {name:'Like golem', desc:'Craft full netherite gear'},
+        {name:'No !!!', desc:'Break your most valuable tool'},
+        {name:'Engineer', desc:'Craft a redstone block'},
+        {name:'The power', desc:'Craft a lever'},
+        {name:'Everything necessary', desc:'Craft piston, observer & dispenser'},
+        {name:'Shakespeare', desc:'Knowledge is the key — books!'},
+        {name:'Magical power', desc:'Great power, great responsibility'},
+        {name:'Mega power', desc:'The beginning of true power'},
+      ],
+      fr: [
+        {name:'MineAdvancement', desc:'Commence ton aventure dans la grotte'},
+        {name:'Plus dur que la pierre', desc:'Fond ton premier fer'},
+        {name:'Le feu ?!', desc:'Découvre la puissance du fourneau'},
+        {name:'Protection', desc:'Fabrique un bouclier'},
+        {name:'Plus profond', desc:'Entre dans la deep dark'},
+        {name:'Collectionneur de minerais', desc:'Collecte tous les types de minerais'},
+        {name:'Enchanteur', desc:'Fabrique un bloc de lapis'},
+        {name:'Téléportation', desc:'Utilise une perle de l\'Ender'},
+        {name:'Encore une amélioration ?!', desc:'Une idée pour aller plus loin'},
+        {name:'Amélioration principale', desc:'Fabrique un équipement diamant complet'},
+        {name:'Soldat indestructible', desc:'Maîtrise la dimension nether'},
+        {name:'Comme un golem', desc:'Fabrique un équipement netherite complet'},
+        {name:'Non !!!', desc:'Casse ton outil le plus précieux'},
+        {name:'Ingénieur', desc:'Fabrique un bloc de redstone'},
+        {name:'La puissance', desc:'Fabrique un levier'},
+        {name:'Tout le nécessaire', desc:'Fabrique piston, observer & dispenser'},
+        {name:'Shakespeare', desc:'La connaissance est la clé — des livres !'},
+        {name:'Puissance magique', desc:'Un grand pouvoir implique de grandes responsabilités'},
+        {name:'Méga puissance', desc:'Le début du vrai pouvoir'},
+      ]
+    }
+  }
+};
+
+// ─── NAVIGATION ───
+let currentPack = null;
+
+function showDetail(id) {
+  currentPack = id;
+  renderDetail(id);
+  document.getElementById('home').classList.add('hidden');
+  const d = document.getElementById('detail');
+  d.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goBack() {
+  currentPack = null;
+  document.getElementById('home').classList.remove('hidden');
+  const d = document.getElementById('detail');
+  d.classList.remove('active');
+  window.scrollTo(0,0);
+}
+
+function renderDetail(id) {
+  const p = packs[id];
+  const l = lang;
+  const features = p.features[l].map(([icon, text]) =>
+    `<li><span class="feat-icon">${icon}</span>${text}</li>`
+  ).join('');
+
+  const infoTiles = p.infoTiles[l].map(([label, val]) =>
+    `<div class="info-tile"><div class="info-tile-label">${label}</div><div class="info-tile-value">${val}</div></div>`
+  ).join('');
+
+  let advSection = '';
+  if (p.advancements) {
+    const items = p.advancements[l].map(a =>
+      `<div class="adv-item"><div class="adv-item-name">${a.name}</div><div class="adv-item-desc">${a.desc}</div></div>`
+    ).join('');
+    const label = l === 'en' ? 'Advancement List' : 'Liste des succès';
+    advSection = `<p class="section-title">${label}</p><div class="adv-grid">${items}</div>`;
+  }
+
+  let spoilerSection = '';
+  if (p.spoiler) {
+    const sp = p.spoiler[l];
+    spoilerSection = `
+      <div class="spoil-box">
+        <button class="spoil-toggle" onclick="toggleSpoil(this)">${sp.title} <span>▾</span></button>
+        <div class="spoil-content"><p style="font-size:.88rem;line-height:1.8;color:var(--text)">${sp.content}</p></div>
+      </div>`;
+  }
+
+  const howLabel = l === 'en' ? 'How to Install' : 'Comment Installer';
+  const howSteps = l === 'en'
+    ? ['Download the .zip file below','In Minecraft, open your world\'s <code>datapacks</code> folder (or go to <em>Edit World → Open World Folder → datapacks</em>)','Drop the .zip inside (do NOT unzip)','Run <code>/reload</code> in-game — done!']
+    : ['Téléchargez le fichier .zip ci-dessous','Dans Minecraft, ouvrez le dossier <code>datapacks</code> de votre monde (ou <em>Modifier le monde → Ouvrir le dossier → datapacks</em>)','Déposez le .zip dedans (NE PAS décompresser)','Exécutez <code>/reload</code> en jeu — c\'est prêt !'];
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="detail-header" style="--c:${p.color}">
+      <div class="detail-icon">${p.icon}</div>
+      <div class="detail-meta">
+        <div class="detail-title" style="--c:${p.color}">${p.titles[l]}</div>
+        <div class="detail-version-badge">${p.versions}</div>
+        <p class="detail-tagline">${p.taglines[l]}</p>
+        <a href="#" class="detail-download" style="--c:${p.color};background:${p.color}">
+          ⬇ ${l === 'en' ? 'Download' : 'Télécharger'}
+        </a>
+      </div>
+    </div>
+
+    <p class="section-title">${l === 'en' ? 'Features' : 'Fonctionnalités'}</p>
+    <ul class="feature-list" style="--c:${p.color}">${features}</ul>
+
+    <p class="section-title">${l === 'en' ? 'Pack Info' : 'Infos du pack'}</p>
+    <div class="info-grid">${infoTiles}</div>
+
+    ${advSection}
+    ${spoilerSection}
+
+    <p class="section-title">${howLabel}</p>
+    <ul class="feature-list" style="--c:${p.color}">
+      ${howSteps.map((s,i) => `<li><span class="feat-icon">${i+1}.</span><span>${s}</span></li>`).join('')}
+    </ul>
+  `;
+}
+
+function toggleSpoil(btn) {
+  const content = btn.nextElementSibling;
+  content.classList.toggle('open');
+  btn.querySelector('span').textContent = content.classList.contains('open') ? '▴' : '▾';
+}
+
+// ─── STARS ───
+for (let i = 0; i < 60; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const size = Math.random() * 2 + 1;
+  s.style.cssText = `width:${size}px;height:${size}px;
+    left:${Math.random()*100}vw;top:${Math.random()*100}vh;
+    background:rgba(255,255,255,${Math.random()*.5+.1});
+    animation:twinkle ${Math.random()*3+2}s ease-in-out infinite alternate;
+    animation-delay:${Math.random()*4}s`;
+  document.body.appendChild(s);
+}
+const style2 = document.createElement('style');
+style2.textContent = '@keyframes twinkle{from{opacity:.1}to{opacity:.9}}';
+document.head.appendChild(style2);
+</script>
+</body>
+</html>
